@@ -4,7 +4,6 @@ United Nations General Assembly Decision-Making dataset (PostgreSQL)
 An ongoing personal data analytics project exploring United Nations General Assembly voting records (`All_Votes_RS-077`) using PostgreSQL. This repository contains SQL scripts designed to perform descriptive voting analysis and compute international voting alignment (similarity indices) between specific countries and the European Union.
 
 # Repository Structure
-`All_Votes_RS-077.csv`: The starter dataset containing UN General Assembly voting records (including resolutions, meeting records, years, countries/seats, and amended vote outcomes).
 `descriptive_analysis_on_voting_statistics.sql`: Queries focusing on high-level trends, yearly meeting frequencies, important resolution counts, and breakdown of voting positions (in favor, against, abstaining, not voting) by country, alongside historical breakpoint comparisons (pre-2014, 2014–2015, 2016–2021, and 2022–2023).
 `similarity-index.sql`: Advanced analytical queries utilizing self-joins and Common Table Expressions (CTEs) to calculate voting alignment percentages and coincidence proportions (e.g., Germany vs. Ukraine, and EU consensus vs. Ukraine).
 
