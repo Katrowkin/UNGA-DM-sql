@@ -1,6 +1,7 @@
---- Solution type: where countries diverge the most
-SELECT 
-    decision_topic,
+--- During which votes do countries disagree more?
+WITH desicions AS (
+SELECT
+	decision_topic,
     COUNT(*) FILTER (WHERE original_vote = 'in favor') AS count_in_favor,
     COUNT(*) FILTER (WHERE original_vote = 'against') AS count_against,
     COUNT(*) FILTER (WHERE original_vote = 'abstaining') AS count_abstaining,
@@ -8,13 +9,22 @@ SELECT
     COUNT(*) AS total_country_votes
 FROM public.all_votes_rs077
 GROUP BY decision_topic
-ORDER BY total_country_votes DESC;
+ORDER BY total_country_votes DESC)
 
-
+SELECT
+	decision_topic,
+	count_in_favor,
+	count_against,
+	count_abstaining,
+	count_not_voting,
+	total_country_votes,
+	ROUND((count_against * 100.0) / NULLIF(total_country_votes, 0), 2) AS perc_disagreement
+FROM desicions
+	
 
 
 --- Group cohesion
-WITH bloc_members AS (
+WITH bloc_members AS (	
     SELECT 'EU' AS bloc, unnest(ARRAY[
         'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia',
         'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece',
@@ -69,19 +79,17 @@ decision_metrics AS (
 )
 SELECT
     bloc,
-    MIN(meeting_year) AS first_year,
-    MAX(meeting_year) AS last_year,
     COUNT(*) AS decisions_all,
     COUNT(*) FILTER (WHERE meeting_year >= 2014) AS decisions_from_2014,
     COUNT(*) FILTER (WHERE meeting_year >= 2022) AS decisions_from_2022,
 
-    ROUND(AVG(majority_share), 4) AS majority_all,
-    ROUND(AVG(majority_share) FILTER (WHERE meeting_year >= 2014), 4) AS majority_from_2014,
-    ROUND(AVG(majority_share) FILTER (WHERE meeting_year >= 2022), 4) AS majority_from_2022,
+    ROUND(AVG(majority_share), 2) AS majority_all,
+    ROUND(AVG(majority_share) FILTER (WHERE meeting_year >= 2014), 2) AS majority_from_2014,
+    ROUND(AVG(majority_share) FILTER (WHERE meeting_year >= 2022), 2) AS majority_from_2022,
 
-    ROUND(AVG(rice_index), 4) AS rice_all,
-    ROUND(AVG(rice_index) FILTER (WHERE meeting_year >= 2014), 4) AS rice_from_2014,
-    ROUND(AVG(rice_index) FILTER (WHERE meeting_year >= 2022), 4) AS rice_from_2022
+    ROUND(AVG(rice_index), 2) AS rice_all,
+    ROUND(AVG(rice_index) FILTER (WHERE meeting_year >= 2014), 2) AS rice_from_2014,
+    ROUND(AVG(rice_index) FILTER (WHERE meeting_year >= 2022), 2) AS rice_from_2022
 FROM decision_metrics
 GROUP BY bloc
 ORDER BY rice_from_2022 DESC NULLS LAST;
@@ -130,10 +138,10 @@ volatility_stats AS (
         country,
         decision_topic,
         COUNT(*) AS active_years,
-        ROUND(AVG(similarity_rate)::numeric, 4) AS avg_similarity,
-        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY similarity_rate)::numeric, 4) AS median_similarity,
-        ROUND(STDDEV_SAMP(similarity_rate)::numeric, 4) AS volatility_stddev,
-        ROUND((MAX(similarity_rate) - MIN(similarity_rate))::numeric, 4) AS min_max_spread
+        ROUND(AVG(similarity_rate)::numeric, 2) AS avg_similarity,
+        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY similarity_rate)::numeric, 2) AS median_similarity,
+        ROUND(STDDEV_SAMP(similarity_rate)::numeric, 2) AS volatility_stddev,
+        ROUND((MAX(similarity_rate) - MIN(similarity_rate))::numeric, 2) AS min_max_spread
     FROM yearly_similarity
     GROUP BY
         country,
@@ -179,13 +187,13 @@ WITH unique_votes AS (
 SELECT 
     vote_importance,
     COUNT(*) AS total_decisions,
-    ROUND(AVG(count_in_favor::numeric / count_member_states * 100), 2) AS avg_pct_in_favor,
-    ROUND(AVG(count_against::numeric / count_member_states * 100), 2) AS avg_pct_against,
-    ROUND(AVG(count_abstaining::numeric / count_member_states * 100), 2) AS avg_pct_abstaining,
+    ROUND(AVG(count_in_favor::numeric / count_member_states * 100), 2) AS avg_perc_in_favor,
+    ROUND(AVG(count_against::numeric / count_member_states * 100), 2) AS avg_perc_against,
+    ROUND(AVG(count_abstaining::numeric / count_member_states * 100), 2) AS avg_perc_abstaining,
     ROUND(AVG(
         GREATEST(count_in_favor, count_against, count_abstaining)::numeric 
         / NULLIF(count_in_favor + count_against + count_abstaining, 0) * 100
-    ), 2) AS avg_consensus_pct
+    ), 2) AS avg_consensus_perc
 FROM unique_votes
 GROUP BY vote_importance
 ORDER BY total_decisions DESC;

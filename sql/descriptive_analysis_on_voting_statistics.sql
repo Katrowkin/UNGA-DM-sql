@@ -1,10 +1,24 @@
---- How many votings there are a year and how many of them are "important"?
-SELECT 
+--- How many meetings there are a year and how many of them are "important"?
+SELECT
     meeting_year,
     COUNT(DISTINCT meeting_record_id) AS meetings_a_year,
-    COUNT(CASE WHEN important = 'important' THEN 1 END) AS number_important
+    COUNT(DISTINCT CASE WHEN important = 'important' THEN meeting_record_id END) AS number_important
 FROM all_votes_rs077
 GROUP BY meeting_year;
+
+--- How many meetings on average there are a year and how many of them are "important"?
+WITH yearly_stats AS (
+    SELECT
+        meeting_year,
+        COUNT(DISTINCT meeting_record_id) AS meetings_in_year,
+        COUNT(DISTINCT CASE WHEN important = 'important' THEN meeting_record_id END) AS important_meetings_in_year
+    FROM all_votes_rs077
+    GROUP BY meeting_year
+)
+SELECT
+    ROUND(AVG(meetings_in_year), 2) AS avg_meetings_per_year,
+    ROUND(AVG(important_meetings_in_year), 2) AS avg_important_meetings_per_year
+FROM yearly_stats;
 
 --- Which coutries vote in favor the most often?
 SELECT 
@@ -42,6 +56,32 @@ GROUP BY current_seat_name
 ORDER BY number_of_votes DESC
 LIMIT 10;
 
+--- How many votes there are a year?
+SELECT 
+	meeting_year,
+	COUNT(*) AS yearly_count
+FROM all_votes_rs077
+GROUP BY meeting_year
+
+--- How many votes AND meetings there are a year and how many of meetings are "important"?
+WITH yearly_stats AS (
+    SELECT
+        meeting_year,
+        COUNT(*) AS yearly_count,
+        COUNT(DISTINCT meeting_record_id) AS meetings_a_year,
+        COUNT(DISTINCT CASE WHEN important = 'important' THEN meeting_record_id END) AS number_important
+    FROM all_votes_rs077
+    GROUP BY meeting_year
+)
+SELECT
+    meeting_year,
+    yearly_count,
+    meetings_a_year,
+    number_important,
+    ROUND(CORR(meetings_a_year, yearly_count) OVER ()::numeric, 4) AS corr_meetings_votes
+FROM yearly_stats
+ORDER BY meeting_year;
+
 --- How did voting activity change after 2014 and 2022?
 WITH avg_2000_2013 AS (
     SELECT ROUND(AVG(yearly_count), 2) AS val
@@ -70,12 +110,12 @@ avg_2016_2021 AS (
         GROUP BY meeting_year
     ) AS sub
 ),
-avg_2022_2023 AS (
+votes_2022 AS (
     SELECT ROUND(AVG(yearly_count), 2) AS val
     FROM (
         SELECT meeting_year, COUNT(*) AS yearly_count
         FROM all_votes_rs077
-        WHERE meeting_year BETWEEN 2022 AND 2023
+        WHERE meeting_year = 2022
         GROUP BY meeting_year
     ) AS sub
 )
@@ -83,4 +123,4 @@ SELECT
     (SELECT val FROM avg_2000_2013) AS avg_votes_2000_2013,
     (SELECT val FROM avg_2014_2015) AS avg_votes_2014_2015,
 	(SELECT val FROM avg_2016_2021) AS avg_votes_2016_2021,
-	(SELECT val FROM avg_2022_2023) AS avg_votes_2022_2023;
+	(SELECT val FROM votes_2022) AS votes_2022;
