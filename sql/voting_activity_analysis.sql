@@ -3,7 +3,7 @@ SELECT
 	meeting_year,
 	COUNT(*) AS yearly_count
 FROM all_votes_rs077
-GROUP BY meeting_year
+GROUP BY meeting_year;
 
 --- Which coutries vote in favor the most often?
 SELECT 
@@ -59,6 +59,17 @@ SELECT
     ROUND(CORR(meetings_a_year, yearly_count) OVER ()::numeric, 4) AS corr_meetings_votes
 FROM yearly_stats
 ORDER BY meeting_year;
+
+--- Which countries request recorded votes the most?
+SELECT
+    request_by,
+    COUNT(DISTINCT decision_id) AS n_requested_votes,
+    COUNT(DISTINCT session_id) AS n_sessions_with_requests
+FROM all_votes_rs077
+WHERE request_by IS NOT NULL
+  AND request_by <> 'not available'
+GROUP BY request_by
+ORDER BY n_requested_votes DESC;
 
 --- How did voting activity change after 2014 and 2022?
 WITH avg_2000_2013 AS (
